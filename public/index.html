@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Email Trigger</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="openTab(event, 'formTab')">New Task Trigger</button>
+        <button class="tab-btn" onclick="openTab(event, 'historyTab')">Trigger History</button>
+    </div>
+
+    <div id="formTab" class="tab-content" style="display: block;">
+        <div class="container">
+            <h2>Initiate Task & Email Trigger</h2>
+            <form id="taskForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Department <small>(Hold Ctrl/Cmd for multiple)</small></label>
+                        <select id="dept" multiple required size="6">
+                            <option value="PPC">PPC</option>
+                            <option value="MNT">MNT</option>
+                            <option value="PUR">PUR</option>
+                            <option value="PROD">PROD</option>
+                            <option value="QA">QA</option>
+                            <option value="TR">TR</option>
+                            <option value="HT">HT</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Priority</label>
+                        <select id="priority" required>
+                            <option value="HIGH">HIGH</option>
+                            <option value="MEDIUM">MEDIUM</option>
+                            <option value="LOW">LOW</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Target Date</label>
+                        <input type="date" id="targetDate" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Responsible Person <small>(Hold Ctrl/Cmd for multiple)</small></label>
+                        <select id="resp" multiple required size="6">
+                            <option value="DILLI">DILLI</option>
+                            <option value="UMA MAHESH">UMA MAHESH</option>
+                            <option value="RAJESH">RAJESH</option>
+                            <option value="MANOHAR">MANOHAR</option>
+                            <option value="TRIPATHI">TRIPATHI</option>
+                            <option value="QA-BALA">QA-BALA</option>
+                            <option value="BALA">BALA</option>
+                            <option value="DESIGN/NPD">DESIGN/NPD</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Email Addresses <small>(Auto-filled)</small></label>
+                        <input type="email" id="email" multiple required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>(MOM) Problem Description</label>
+                    <textarea id="mom" rows="2" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Action Required</label>
+                    <textarea id="action" rows="2" required></textarea>
+                </div>
+
+                <button type="submit" class="submit-btn">Submit & Start 3-Hour Trigger</button>
+            </form>
+            <div id="statusMessage"></div>
+        </div>
+    </div>
+
+    <div id="historyTab" class="tab-content" style="display: none;">
+        <div class="table-container">
+            <h2>Trigger History</h2>
+            <div class="table-responsive">
+                <table id="historyTable">
+                    <thead>
+                        <tr>
+                            <th>S.No</th>
+                            <th>Priority</th>
+                            <th>Dept</th>
+                            <th>Date</th>
+                            <th>(MOM) Description</th>
+                            <th>Action</th>
+                            <th>Resp</th>
+                            <th>Target</th>
+                            <th>Status / Ack</th>
+                            <th>Closure Details & Files</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

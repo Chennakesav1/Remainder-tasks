@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Complete Task & Upload</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .completion-box { text-align: left; }
+        .file-input { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container completion-box">
+        <h2>Close Task</h2>
+        <p>Please provide final remarks and upload any relevant images or files before closing this task.</p>
+        
+        <form id="completionForm">
+            <div class="form-group">
+                <label>Closing Remarks / Text:</label>
+                <textarea id="remarks" rows="4" placeholder="Enter details of completion..." required></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Upload Images / Files (Optional):</label>
+                <input type="file" id="files" class="file-input" multiple accept="image/*,.pdf,.doc,.docx,.xlsx,.csv">
+            </div>
+
+            <button type="submit" class="submit-btn">Submit & Close Task</button>
+        </form>
+        <div id="compStatusMessage"></div>
+    </div>
+
+    <script>
+        // Extract the task ID from the URL (e.g., ?id=12345)
+        const urlParams = new URLSearchParams(window.location.search);
+        const taskId = urlParams.get('id');
+
+        document.getElementById('completionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('remarks', document.getElementById('remarks').value);
+            
+            // Append files
+            const files = document.getElementById('files').files;
+            for(let i = 0; i < files.length; i++) {
+                formData.append('files', files[i]);
+            }
+
+            const statusDiv = document.getElementById('compStatusMessage');
+            statusDiv.textContent = "Uploading and closing...";
+            statusDiv.style.color = "#003366";
+
+            try {
+                const response = await fetch(`/api/tasks/${taskId}/complete`, {
+                    method: 'POST',
+                    body: formData // Note: fetch automatically sets correct headers for FormData
+                });
+
+                if (response.ok) {
+                    statusDiv.textContent = "Task successfully marked as CLOSED! Emails stopped.";
+                    statusDiv.style.color = "#28a745";
+                    document.getElementById('completionForm').reset();
+                } else {
+                    statusDiv.textContent = "Error closing task.";
+                    statusDiv.style.color = "#dc3545";
+                }
+            } catch (error) {
+                statusDiv.textContent = "Network Error.";
+            }
+        });
+    </script>
+</body>
+</html>
