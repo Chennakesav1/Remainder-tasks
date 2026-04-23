@@ -28,10 +28,14 @@ const emailMapping = {
     "UMA MAHESH": "maintenance@precifast.in",
     "RAJESH": "e.rajesh@precifast.in",
     "MANOHAR": "prod@precifast.in",
-    "TRIPATHI": "prod@precifast.in", 
+    "TRIPATHI": "lstripathi@precifast.in", 
     "QA-BALA": "sqa@precifast.in", 
     "BALA": "balakrishna.b@precifast.in",
-    "DESIGN/NPD": "parandama@precifast.in" // Update this placeholder if needed
+    "DESIGN/NPD": "parandama@precifast.in" ,// Update this placeholder if needed
+    "HR":"hr.ppl@precifast.in",
+    "VIKAS": "vikas.s@precifast.in",
+    "PPC":"ppc@precifast.in",
+    "NANI": "narasimha.nath@precifast.in"
 };
 
 // --- SET TODAY'S DATE ON LOAD ---

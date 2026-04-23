@@ -46,11 +46,18 @@ const taskSchema = new mongoose.Schema({
 
 const Task = mongoose.model('Task', taskSchema);
 
+// --- UPDATED EMAIL CONFIGURATION FOR OUTLOOK ---
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'mail.precifast.in',
+    port: 465,
+    secure: true, // true for port 465
     auth: {
         user: process.env.EMAIL_USER, 
         pass: process.env.EMAIL_PASS  
+    },
+    tls: {
+        // This helps prevent connection errors with private servers
+        rejectUnauthorized: false 
     }
 });
 
