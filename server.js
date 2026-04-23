@@ -13,11 +13,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public')); 
 
-// --- FILE UPLOAD CONFIGURATION (MULTER) ---
+
 const storage = multer.diskStorage({
     destination: './public/uploads/',
     filename: function(req, file, cb){
-        // Ensure unique filenames
+        
         cb(null, 'file-' + Date.now() + path.extname(file.originalname));
     }
 });
@@ -27,7 +27,7 @@ mongoose.connect('mongodb+srv://chennakesavarao89_db_user:Chenna12345@cluster0.u
     .then(() => console.log('✅ Precifast ERP Database Connected Successfully!'))
     .catch(err => console.log('❌ Database Connection Error:', err));
 
-// --- UPDATED SCHEMA ---
+
 const taskSchema = new mongoose.Schema({
     dept: [String],
     date: Date,
@@ -39,29 +39,29 @@ const taskSchema = new mongoose.Schema({
     action: String,
     status: { type: String, default: 'OPEN' },
     // New fields for interaction
-    acknowledged: { type: Boolean, default: false }, // Tracks if "OK" was clicked
-    closingRemarks: String,                          // Text entered upon completion
-    attachments: [String]                            // File paths
+    acknowledged: { type: Boolean, default: false }, 
+    closingRemarks: String,                          
+    attachments: [String]                            
 });
 
 const Task = mongoose.model('Task', taskSchema);
 
-// --- UPDATED EMAIL CONFIGURATION FOR OUTLOOK ---
+
 const transporter = nodemailer.createTransport({
     host: 'mail.precifast.in',
     port: 465,
-    secure: true, // true for port 465
+    secure: true,
     auth: {
         user: process.env.EMAIL_USER, 
         pass: process.env.EMAIL_PASS  
     },
     tls: {
-        // This helps prevent connection errors with private servers
+        
         rejectUnauthorized: false 
     }
 });
 
-// --- API ENDPOINTS ---
+
 app.post('/api/tasks', async (req, res) => {
     try {
         const newTask = new Task(req.body);
@@ -82,7 +82,7 @@ app.get('/api/tasks', async (req, res) => {
     }
 });
 
-// 1. Endpoint for clicking "OK" in email
+
 app.get('/api/tasks/:id/acknowledge', async (req, res) => {
     try {
         await Task.findByIdAndUpdate(req.params.id, { acknowledged: true });
@@ -98,10 +98,10 @@ app.get('/api/tasks/:id/acknowledge', async (req, res) => {
     }
 });
 
-// 2. Endpoint for completing task with files
+
 app.post('/api/tasks/:id/complete', upload.array('files', 5), async (req, res) => {
     try {
-        // Create an array of relative paths for the uploaded files
+        
         const filePaths = req.files.map(file => '/uploads/' + file.filename);
         
         await Task.findByIdAndUpdate(req.params.id, {
@@ -115,33 +115,60 @@ app.post('/api/tasks/:id/complete', upload.array('files', 5), async (req, res) =
     }
 });
 
-// --- EMAIL SENDING LOGIC (WITH HTML BUTTONS) ---
+
 async function sendEmailAlert(task) {
     const deptString = task.dept.join(', ');
     const respString = task.resp.join(', ');
     const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
 
     const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: '"PRECIFAST System" <' + process.env.EMAIL_USER + '>',
         to: task.email,
-        subject: `[${task.priority} Priority] Action Required - Dept: ${deptString}`,
+        subject: `[${task.priority}] Action Required - PRECIFAST Task: ${deptString}`,
         html: `
-            <div style="font-family: Arial, sans-serif; color: #333;">
-                <h2 style="color: #003366;">Automated Task Reminder</h2>
-                <p>Hello <b>${respString}</b>,</p>
-                <p>This is an automated reminder for an OPEN task in PRECIFAST PVT LTD</p>
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                <div style="background-color: #003366; color: #ffffff; padding: 20px; text-align: center;">
+                    <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px;">PRECIFAST PVT LTD</h1>
+                    <p style="margin: 5px 0 0 0; font-size: 14px; color: #FFCC00;">Automated Task Reminder System</p>
+                </div>
                 
-                <table style="border-collapse: collapse; width: 100%; margin-bottom: 20px;">
-                    <tr><td style="padding: 8px; border: 1px solid #ddd; background: #F4F7F6;"><b>Department:</b></td><td style="padding: 8px; border: 1px solid #ddd;">${deptString}</td></tr>
-                    <tr><td style="padding: 8px; border: 1px solid #ddd; background: #F4F7F6;"><b>Target Date:</b></td><td style="padding: 8px; border: 1px solid #ddd;">${new Date(task.targetDate).toLocaleDateString()}</td></tr>
-                    <tr><td style="padding: 8px; border: 1px solid #ddd; background: #F4F7F6;"><b>(MOM) Problem:</b></td><td style="padding: 8px; border: 1px solid #ddd;">${task.mom}</td></tr>
-                    <tr><td style="padding: 8px; border: 1px solid #ddd; background: #F4F7F6;"><b>Action Required:</b></td><td style="padding: 8px; border: 1px solid #ddd;">${task.action}</td></tr>
-                </table>
+                <div style="padding: 30px; background-color: #ffffff; color: #333333;">
+                    <p style="font-size: 16px;">Dear <b>${respString}</b>,</p>
+                    <p style="font-size: 15px; line-height: 1.5;">This is an automated reminder regarding an <b>OPEN</b> task assigned to your department that requires your attention.</p>
+                    
+                    <table style="width: 100%; border-collapse: collapse; margin: 25px 0;">
+                        <tr>
+                            <td style="padding: 12px; border-bottom: 1px solid #eeeeee; width: 35%; color: #666666;"><b>Priority:</b></td>
+                            <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #d9534f; font-weight: bold;">${task.priority}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #666666;"><b>Department:</b></td>
+                            <td style="padding: 12px; border-bottom: 1px solid #eeeeee;">${deptString}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #666666;"><b>Target Date:</b></td>
+                            <td style="padding: 12px; border-bottom: 1px solid #eeeeee; font-weight: bold;">${new Date(task.targetDate).toLocaleDateString()}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #666666;"><b>Problem (MOM):</b></td>
+                            <td style="padding: 12px; border-bottom: 1px solid #eeeeee;">${task.mom}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #666666;"><b>Action Required:</b></td>
+                            <td style="padding: 12px; border-bottom: 1px solid #eeeeee;">${task.action}</td>
+                        </tr>
+                    </table>
 
-                <p><b>Please respond to this task:</b></p>
-                <a href="${baseUrl}/api/tasks/${task._id}/acknowledge" style="display: inline-block; padding: 12px 20px; margin-right: 15px; background-color: #FFCC00; color: #003366; text-decoration: none; font-weight: bold; border-radius: 4px;">Click to Acknowledge (OK)</a>
+                    <div style="text-align: center; margin-top: 30px;">
+                        <a href="${baseUrl}/api/tasks/${task._id}/acknowledge" style="display: inline-block; padding: 12px 24px; background-color: #FFCC00; color: #003366; text-decoration: none; font-weight: bold; border-radius: 5px; margin: 10px;">Acknowledge (OK)</a>
+                        <a href="${baseUrl}/complete.html?id=${task._id}" style="display: inline-block; padding: 12px 24px; background-color: #003366; color: #ffffff; text-decoration: none; font-weight: bold; border-radius: 5px; margin: 10px;">Mark as Complete & Upload</a>
+                    </div>
+                </div>
                 
-                <a href="${baseUrl}/complete.html?id=${task._id}" style="display: inline-block; padding: 12px 20px; background-color: #003366; color: #ffffff; text-decoration: none; font-weight: bold; border-radius: 4px;">Mark as Complete & Upload Files</a>
+                <div style="background-color: #f4f7f6; padding: 15px; text-align: center; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0;">
+                    <p style="margin: 0;">This is an automated system generated email. Please do not reply directly to this thread.</p>
+                    <p style="margin: 5px 0 0 0;">&copy; ${new Date().getFullYear()} Precifast Pvt Ltd. All rights reserved.</p>
+                </div>
             </div>
         `
     };
@@ -153,6 +180,18 @@ async function sendEmailAlert(task) {
         console.log("Error sending email:", error);
     }
 }
+
+
+app.put('/api/tasks/:id/remarks', async (req, res) => {
+    try {
+        await Task.findByIdAndUpdate(req.params.id, {
+            closingRemarks: req.body.remarks
+        });
+        res.json({ message: "Remark updated successfully" });
+    } catch (error) {
+        res.status(500).json({ error: "Error updating remark." });
+    }
+});
 
 cron.schedule('0 */3 * * *', async () => {
     try {

@@ -1,28 +1,28 @@
-// --- TAB NAVIGATION LOGIC ---
+
 function openTab(evt, tabName) {
-    // Hide all tab content
+    
     const tabcontent = document.getElementsByClassName("tab-content");
     for (let i = 0; i < tabcontent.length; i++) {
         tabcontent[i].style.display = "none";
     }
 
-    // Remove "active" class from all tab buttons
+  
     const tablinks = document.getElementsByClassName("tab-btn");
     for (let i = 0; i < tablinks.length; i++) {
         tablinks[i].className = tablinks[i].className.replace(" active", "");
     }
 
-    // Show the current tab, and add an "active" class to the button that opened the tab
+    
     document.getElementById(tabName).style.display = "block";
     evt.currentTarget.className += " active";
 
-    // If History tab is opened, refresh the data
+    
     if (tabName === 'historyTab') {
         loadHistory();
     }
 }
 
-// --- EMAIL MAPPING DICTIONARY ---
+
 const emailMapping = {
     "DILLI": "dilli.d@precifast.in",
     "UMA MAHESH": "maintenance@precifast.in",
@@ -31,20 +31,20 @@ const emailMapping = {
     "TRIPATHI": "lstripathi@precifast.in", 
     "QA-BALA": "sqa@precifast.in", 
     "BALA": "balakrishna.b@precifast.in",
-    "DESIGN/NPD": "parandama@precifast.in" ,// Update this placeholder if needed
+    "DESIGN/NPD": "parandama@precifast.in" ,
     "HR":"hr.ppl@precifast.in",
     "VIKAS": "vikas.s@precifast.in",
     "PPC":"ppc@precifast.in",
     "NANI": "narasimha.nath@precifast.in"
 };
 
-// --- SET TODAY'S DATE ON LOAD ---
+
 document.addEventListener("DOMContentLoaded", () => {
     const dateInput = document.getElementById('date');
     const today = new Date().toISOString().split('T')[0];
     dateInput.value = today;
     
-    // Initial load of history in the background
+    
     loadHistory(); 
 });
 
@@ -53,7 +53,7 @@ function getSelectedValues(selectId) {
     return Array.from(select.selectedOptions).map(option => option.value);
 }
 
-// --- AUTO-FILL EMAILS ON SELECTION CHANGE ---
+
 document.getElementById('resp').addEventListener('change', function() {
     const selectedPersons = getSelectedValues('resp');
     
@@ -64,7 +64,7 @@ document.getElementById('resp').addEventListener('change', function() {
     document.getElementById('email').value = emails.join(', ');
 });
 
-// --- FETCH & RENDER HISTORY ---
+
 function formatDate(dateString) {
     if (!dateString) return "";
     return new Date(dateString).toISOString().split('T')[0];
@@ -81,11 +81,11 @@ async function loadHistory() {
         tasks.forEach((task, index) => {
             const row = document.createElement('tr');
             
-            // Format Acknowledgment status
+            
             let ackStatus = task.acknowledged ? 
                 '<span style="color:#003366; font-size:0.8rem; display:block; margin-top:5px;">✓ Read, replied OK</span>' : '';
 
-            // Format Attachments as clickable links
+            
             let attachmentLinks = '';
             if (task.attachments && task.attachments.length > 0) {
                 attachmentLinks = task.attachments.map((filePath, i) => 
@@ -93,12 +93,14 @@ async function loadHistory() {
                 ).join('');
             }
 
-            // Format Closure info
+            
+            
             let closureInfo = '';
             if (task.status === 'CLOSED') {
                 closureInfo = `
                     <div style="font-size: 0.85rem;">
-                        <b>Remarks:</b> ${task.closingRemarks || 'N/A'}<br>
+                        <b>Remarks:</b> <span id="remark-text-${task._id}">${task.closingRemarks || 'N/A'}</span>
+                        <button onclick="editRemark('${task._id}')" class="edit-btn">✎ Edit</button><br>
                         ${attachmentLinks}
                     </div>
                 `;
@@ -126,7 +128,7 @@ async function loadHistory() {
     }
 }
 
-// --- FORM SUBMISSION LOGIC ---
+
 document.getElementById('taskForm').addEventListener('submit', async function(e) {
     e.preventDefault();
 
@@ -156,12 +158,12 @@ document.getElementById('taskForm').addEventListener('submit', async function(e)
 
         if (response.ok) {
             statusDiv.textContent = "Task recorded. Initial email sent and 3-hour trigger activated.";
-            statusDiv.style.color = "#28a745"; // Success Green
+            statusDiv.style.color = "#28a745"; 
             
             document.getElementById('taskForm').reset();
             document.getElementById('date').value = new Date().toISOString().split('T')[0];
             
-            // Refresh history data in the background
+            
             loadHistory(); 
         } else {
             statusDiv.textContent = "Error: " + result.error;
@@ -173,3 +175,32 @@ document.getElementById('taskForm').addEventListener('submit', async function(e)
         statusDiv.style.color = "#dc3545";
     }
 });
+
+async function editRemark(taskId) {
+    const currentRemarkSpan = document.getElementById(`remark-text-${taskId}`);
+    const currentText = currentRemarkSpan.innerText;
+    
+    
+    const newRemark = prompt("Edit Closing Remark for PRECIFAST:", currentText === 'N/A' ? '' : currentText);
+    
+    
+    if (newRemark !== null && newRemark.trim() !== "") {
+        try {
+            const response = await fetch(`/api/tasks/${taskId}/remarks`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ remarks: newRemark })
+            });
+            
+            if (response.ok) {
+                
+                loadHistory(); 
+            } else {
+                alert("Failed to update remark.");
+            }
+        } catch (error) {
+            console.error("Error updating remark:", error);
+            alert("Network error.");
+        }
+    }
+}

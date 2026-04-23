@@ -16,7 +16,7 @@ body {
     color: var(--text-dark);
 }
 
-/* Tab Navigation Styling */
+
 .tab-nav {
     display: flex;
     background-color: var(--primary-blue);
@@ -47,7 +47,7 @@ body {
     border-bottom: 4px solid var(--accent-yellow);
 }
 
-/* Container Styling */
+
 .container, .table-container {
     max-width: 800px;
     margin: 40px auto;
@@ -59,7 +59,7 @@ body {
 }
 
 .table-container {
-    max-width: 1200px; /* Wider for the table */
+    max-width: 1200px; 
 }
 
 h2 {
@@ -71,7 +71,7 @@ h2 {
     margin-bottom: 25px;
 }
 
-/* Form Layout */
+
 .form-row {
     display: flex;
     gap: 20px;
@@ -112,7 +112,7 @@ input:focus, select:focus, textarea:focus {
     box-shadow: 0 0 5px rgba(0, 51, 102, 0.2);
 }
 
-/* Multi-select styling */
+
 select[multiple] {
     height: auto;
 }
@@ -125,7 +125,6 @@ select[multiple] option:checked {
     color: var(--text-light);
 }
 
-/* Primary Submit Button */
 .submit-btn {
     width: 100%;
     padding: 14px;
@@ -154,7 +153,6 @@ select[multiple] option:checked {
     font-weight: bold;
 }
 
-/* History Table Styling */
 .table-responsive {
     overflow-x: auto;
 }
@@ -186,7 +184,7 @@ tr:hover {
     background-color: #F1F1F1;
 }
 
-/* Status Pills */
+
 .status-open {
     background-color: var(--accent-yellow);
     color: var(--primary-blue);
@@ -203,4 +201,20 @@ tr:hover {
     border-radius: 12px;
     font-size: 0.8rem;
     font-weight: bold;
+}
+
+.edit-btn {
+    background: none;
+    border: none;
+    color: var(--primary-blue);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-decoration: underline;
+    margin-left: 8px;
+    padding: 0;
+}
+
+.edit-btn:hover {
+    color: #0055A4;
 }
