@@ -203,18 +203,21 @@ tr:hover {
     font-weight: bold;
 }
 
-.edit-btn {
-    background: none;
-    border: none;
+
+.action-edit-btn {
+    background-color: var(--bg-white);
+    border: 1px solid var(--primary-blue);
     color: var(--primary-blue);
+    padding: 6px 12px;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: bold;
-    text-decoration: underline;
-    margin-left: 8px;
-    padding: 0;
+    transition: 0.2s;
+    white-space: nowrap;
 }
 
-.edit-btn:hover {
-    color: #0055A4;
+.action-edit-btn:hover {
+    background-color: var(--primary-blue);
+    color: var(--text-light);
 }

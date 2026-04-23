@@ -81,11 +81,11 @@ async function loadHistory() {
         tasks.forEach((task, index) => {
             const row = document.createElement('tr');
             
-            
+            // Format Acknowledgment status
             let ackStatus = task.acknowledged ? 
                 '<span style="color:#003366; font-size:0.8rem; display:block; margin-top:5px;">✓ Read, replied OK</span>' : '';
 
-            
+            // Format Attachments as clickable links
             let attachmentLinks = '';
             if (task.attachments && task.attachments.length > 0) {
                 attachmentLinks = task.attachments.map((filePath, i) => 
@@ -93,19 +93,18 @@ async function loadHistory() {
                 ).join('');
             }
 
-            
-            
+            // Format Closure info (Removed the edit button from here)
             let closureInfo = '';
             if (task.status === 'CLOSED') {
                 closureInfo = `
                     <div style="font-size: 0.85rem;">
-                        <b>Remarks:</b> <span id="remark-text-${task._id}">${task.closingRemarks || 'N/A'}</span>
-                        <button onclick="editRemark('${task._id}')" class="edit-btn">✎ Edit</button><br>
+                        <b>Remarks:</b> <span id="remark-text-${task._id}">${task.closingRemarks || 'N/A'}</span><br>
                         ${attachmentLinks}
                     </div>
                 `;
             }
 
+            // ADDED THE EXTRA <td> AT THE END FOR THE EDIT BUTTON
             row.innerHTML = `
                 <td>${index + 1}</td>
                 <td>${task.priority || ''}</td>
@@ -120,6 +119,9 @@ async function loadHistory() {
                     ${task.status === 'OPEN' ? ackStatus : ''}
                 </td>
                 <td>${closureInfo}</td>
+                <td>
+                    <button onclick="editRemark('${task._id}')" class="action-edit-btn">✎ Edit</button>
+                </td>
             `;
             tbody.appendChild(row);
         });
