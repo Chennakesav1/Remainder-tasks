@@ -17,7 +17,6 @@ app.use(express.static('public'));
 const storage = multer.diskStorage({
     destination: './public/uploads/',
     filename: function(req, file, cb){
-        
         cb(null, 'file-' + Date.now() + path.extname(file.originalname));
     }
 });
@@ -27,7 +26,7 @@ mongoose.connect('mongodb+srv://chennakesavarao89_db_user:Chenna12345@cluster0.u
     .then(() => console.log('✅ Precifast ERP Database Connected Successfully!'))
     .catch(err => console.log('❌ Database Connection Error:', err));
 
-
+// --- 1. SCHEMA UPDATED ---
 const taskSchema = new mongoose.Schema({
     dept: [String],
     date: Date,
@@ -38,14 +37,14 @@ const taskSchema = new mongoose.Schema({
     mom: String,
     action: String,
     status: { type: String, default: 'OPEN' },
-    // New fields for interaction
     acknowledged: { type: Boolean, default: false }, 
     closingRemarks: String,                          
-    attachments: [String]                            
+    attachments: [String],
+    triggerCount: { type: Number, default: 0 },
+    lastEmailedAt: { type: Date, default: Date.now } // NEW: Tracks the exact time of the last email
 });
 
 const Task = mongoose.model('Task', taskSchema);
-
 
 const transporter = nodemailer.createTransport({
     host: 'mail.precifast.in',
@@ -56,7 +55,6 @@ const transporter = nodemailer.createTransport({
         pass: process.env.EMAIL_PASS  
     },
     tls: {
-        
         rejectUnauthorized: false 
     }
 });
@@ -65,9 +63,30 @@ const transporter = nodemailer.createTransport({
 app.post('/api/tasks', async (req, res) => {
     try {
         const newTask = new Task(req.body);
+        newTask.lastEmailedAt = new Date(); // Set current time on creation
         await newTask.save();
-        await sendEmailAlert(newTask);
-        res.status(201).json({ message: "Task created." });
+
+        const emails = newTask.email.split(',').map(e => e.trim()).filter(e => e);
+
+        for (let userEmail of emails) {
+            const userOpenTasks = await Task.find({ 
+                status: 'OPEN',
+                email: { $regex: new RegExp(userEmail, 'i') } 
+            });
+
+            if (userOpenTasks.length > 0) {
+                await sendConsolidatedEmail(userEmail, userOpenTasks);
+                
+                // --- UPDATE TIMER FOR ALL TASKS SENT IN THIS BATCH ---
+                // If a user gets a new task, we group it with their old tasks.
+                // We reset the 3-hour timer for ALL tasks included in this email so they don't get spammed.
+                for (let task of userOpenTasks) {
+                    await Task.findByIdAndUpdate(task._id, { lastEmailedAt: new Date() });
+                }
+            }
+        }
+
+        res.status(201).json({ message: "Task created and consolidated emails sent." });
     } catch (error) {
         res.status(500).json({ error: "Error saving task" });
     }
@@ -81,7 +100,6 @@ app.get('/api/tasks', async (req, res) => {
         res.status(500).json({ error: "Error fetching history" });
     }
 });
-
 
 app.get('/api/tasks/:id/acknowledge', async (req, res) => {
     try {
@@ -98,12 +116,9 @@ app.get('/api/tasks/:id/acknowledge', async (req, res) => {
     }
 });
 
-
 app.post('/api/tasks/:id/complete', upload.array('files', 5), async (req, res) => {
     try {
-        
         const filePaths = req.files.map(file => '/uploads/' + file.filename);
-        
         await Task.findByIdAndUpdate(req.params.id, {
             status: 'CLOSED',
             closingRemarks: req.body.remarks,
@@ -114,73 +129,6 @@ app.post('/api/tasks/:id/complete', upload.array('files', 5), async (req, res) =
         res.status(500).json({ error: "Error closing task." });
     }
 });
-
-
-async function sendEmailAlert(task) {
-    const deptString = task.dept.join(', ');
-    const respString = task.resp.join(', ');
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
-
-    const mailOptions = {
-        from: '"PRECIFAST System" <' + process.env.EMAIL_USER + '>',
-        to: task.email,
-        subject: `[${task.priority}] Action Required - PRECIFAST Task: ${deptString}`,
-        html: `
-            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-                <div style="background-color: #003366; color: #ffffff; padding: 20px; text-align: center;">
-                    <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px;">PRECIFAST PVT LTD</h1>
-                    <p style="margin: 5px 0 0 0; font-size: 14px; color: #FFCC00;">Automated Task Reminder System</p>
-                </div>
-                
-                <div style="padding: 30px; background-color: #ffffff; color: #333333;">
-                    <p style="font-size: 16px;">Dear <b>${respString}</b>,</p>
-                    <p style="font-size: 15px; line-height: 1.5;">This is an automated reminder regarding an <b>OPEN</b> task assigned to your department that requires your attention.</p>
-                    
-                    <table style="width: 100%; border-collapse: collapse; margin: 25px 0;">
-                        <tr>
-                            <td style="padding: 12px; border-bottom: 1px solid #eeeeee; width: 35%; color: #666666;"><b>Priority:</b></td>
-                            <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #d9534f; font-weight: bold;">${task.priority}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #666666;"><b>Department:</b></td>
-                            <td style="padding: 12px; border-bottom: 1px solid #eeeeee;">${deptString}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #666666;"><b>Target Date:</b></td>
-                            <td style="padding: 12px; border-bottom: 1px solid #eeeeee; font-weight: bold;">${new Date(task.targetDate).toLocaleDateString()}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #666666;"><b>Problem (MOM):</b></td>
-                            <td style="padding: 12px; border-bottom: 1px solid #eeeeee;">${task.mom}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #666666;"><b>Action Required:</b></td>
-                            <td style="padding: 12px; border-bottom: 1px solid #eeeeee;">${task.action}</td>
-                        </tr>
-                    </table>
-
-                    <div style="text-align: center; margin-top: 30px;">
-                        <a href="${baseUrl}/api/tasks/${task._id}/acknowledge" style="display: inline-block; padding: 12px 24px; background-color: #FFCC00; color: #003366; text-decoration: none; font-weight: bold; border-radius: 5px; margin: 10px;">Acknowledge (OK)</a>
-                        <a href="${baseUrl}/complete.html?id=${task._id}" style="display: inline-block; padding: 12px 24px; background-color: #003366; color: #ffffff; text-decoration: none; font-weight: bold; border-radius: 5px; margin: 10px;">Mark as Complete & Upload</a>
-                    </div>
-                </div>
-                
-                <div style="background-color: #f4f7f6; padding: 15px; text-align: center; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0;">
-                    <p style="margin: 0;">This is an automated system generated email. Please do not reply directly to this thread.</p>
-                    <p style="margin: 5px 0 0 0;">&copy; ${new Date().getFullYear()} Precifast Pvt Ltd. All rights reserved.</p>
-                </div>
-            </div>
-        `
-    };
-
-    try {
-        await transporter.sendMail(mailOptions);
-        console.log(`Email sent to ${task.email}`);
-    } catch (error) {
-        console.log("Error sending email:", error);
-    }
-}
-
 
 app.put('/api/tasks/:id/remarks', async (req, res) => {
     try {
@@ -193,17 +141,120 @@ app.put('/api/tasks/:id/remarks', async (req, res) => {
     }
 });
 
-cron.schedule('0 */3 * * *', async () => {
+
+// --- 2. NEW INDIVIDUAL 3-HOUR TRIGGER LOGIC ---
+// Runs every minute to check if exactly 3 hours have passed for specific tasks
+cron.schedule('* * * * *', async () => {
     try {
-        // Only sends emails for OPEN tasks. Once CLOSED, it stops automatically.
-        const openTasks = await Task.find({ status: 'OPEN' });
-        for (let task of openTasks) {
-            await sendEmailAlert(task);
+        // Calculate the time exactly 3 hours ago
+        const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000); 
+
+        // Find tasks that are OPEN AND haven't been emailed in over 3 hours
+        const dueTasks = await Task.find({ 
+            status: 'OPEN',
+            lastEmailedAt: { $lte: threeHoursAgo }
+        });
+
+        if (dueTasks.length === 0) return; // Nothing due right now
+
+        // Group the due tasks by individual email address
+        const tasksByEmail = {};
+        dueTasks.forEach(task => {
+            if (task.email) {
+                const emails = task.email.split(',').map(e => e.trim());
+                emails.forEach(email => {
+                    if (email) {
+                        if (!tasksByEmail[email]) tasksByEmail[email] = [];
+                        tasksByEmail[email].push(task);
+                    }
+                });
+            }
+        });
+
+        // Send one summary email per person
+        for (let [email, tasks] of Object.entries(tasksByEmail)) {
+            await sendConsolidatedEmail(email, tasks);
+
+            // --- 3. RESET TIMER ---
+            // After sending, update lastEmailedAt and triggerCount so the 3-hour wait starts again
+            for (let task of tasks) {
+                await Task.findByIdAndUpdate(task._id, { 
+                    lastEmailedAt: new Date(),
+                    $inc: { triggerCount: 1 } 
+                });
+            }
         }
+
     } catch (error) {
         console.log("Error running cron:", error);
     }
 });
+
+
+async function sendConsolidatedEmail(userEmail, userTasks) {
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    
+    let tableRows = '';
+    userTasks.forEach((task, index) => {
+        tableRows += `
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${index + 1}</td>
+                <td style="padding: 10px; border: 1px solid #ddd; color: #d9534f; font-weight: bold;">${task.priority}</td>
+                <td style="padding: 10px; border: 1px solid #ddd;">${(task.dept || []).join(', ')}</td>
+                <td style="padding: 10px; border: 1px solid #ddd;">${task.mom}</td>
+                <td style="padding: 10px; border: 1px solid #ddd; color: #003366; font-weight: bold;">${task.action}</td> 
+                <td style="padding: 10px; border: 1px solid #ddd;">${new Date(task.targetDate).toLocaleDateString()}</td>
+                <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
+                    <a href="${baseUrl}/api/tasks/${task._id}/acknowledge" style="color: #003366; font-weight:bold; text-decoration: underline; display:block; margin-bottom: 8px;">Acknowledge</a>
+                    <a href="${baseUrl}/complete.html?id=${task._id}" style="display: inline-block; padding: 6px 10px; background-color: #003366; color: #ffffff; text-decoration: none; border-radius: 4px; font-size: 12px;">Close Task</a>
+                </td>
+            </tr>
+        `;
+    });
+
+    const mailOptions = {
+        from: '"PRECIFAST System" <' + process.env.EMAIL_USER + '>',
+        to: userEmail,
+        subject: `[Reminder] You have ${userTasks.length} OPEN Task(s) Pending`,
+        html: `
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 900px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+                <div style="background-color: #003366; color: #ffffff; padding: 20px; text-align: center;">
+                    <h1 style="margin: 0; font-size: 24px;">PRECIFAST PVT LTD</h1>
+                    <p style="margin: 5px 0 0 0; color: #FFCC00;">Consolidated Task Reminder</p>
+                </div>
+                
+                <div style="padding: 20px; color: #333333;">
+                    <p>Hello,</p>
+                    <p>You currently have <b>${userTasks.length} OPEN task(s)</b> that require your attention. Please review them below and close them out once completed.</p>
+                    
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px;">
+                        <thead>
+                            <tr style="background-color: #f4f7f6; color: #003366;">
+                                <th style="padding: 10px; border: 1px solid #ddd;">#</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Priority</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Dept</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Problem (MOM)</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Action Required</th> 
+                                <th style="padding: 10px; border: 1px solid #ddd;">Target Date</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Links</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log(`Consolidated email sent to ${userEmail} with ${userTasks.length} tasks.`);
+    } catch (error) {
+        console.log("Error sending consolidated email:", error);
+    }
+}
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

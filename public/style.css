@@ -221,3 +221,22 @@ tr:hover {
     background-color: var(--primary-blue);
     color: var(--text-light);
 }
+
+/* Ensure table cells align properly */
+#historyTable th, #historyTable td {
+    padding: 12px 8px;
+    vertical-align: top;
+    border: 1px solid #eee;
+}
+
+/* Specific widths for text-heavy columns */
+#historyTable td:nth-child(6), 
+#historyTable td:nth-child(7) {
+    min-width: 180px;
+    line-height: 1.4;
+}
+
+/* Analytics Tab Table */
+#analyticsBody tr:hover {
+    background-color: #fff9e6; /* Slight highlight for visibility */
+}
