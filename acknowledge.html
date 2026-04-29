@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Acknowledge Task</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { font-family: sans-serif; background: #f4f6f8; display: flex; justify-content: center; padding: 50px; }
+        .box { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        textarea { width: 100%; height: 100px; margin-top: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #FFCC00; color: #003366; font-weight: bold; padding: 10px 20px; border: none; border-radius: 4px; margin-top: 15px; cursor: pointer; width: 100%; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2 style="color: #003366;">Acknowledge Task</h2>
+        <p>Please enter your acknowledgement reply below. This will be visible on the main dashboard.</p>
+        
+        <textarea id="remarks" placeholder="E.g., I have seen this and will start working on it today..."></textarea>
+        
+        <button onclick="submitAck()">Submit Acknowledgement</button>
+    </div>
+
+    <script>
+        // Get the task ID from the URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const taskId = urlParams.get('id');
+
+        async function submitAck() {
+            const remarks = document.getElementById('remarks').value;
+            
+            if(!remarks) return alert("Please enter a reply.");
+
+            const response = await fetch(`/api/tasks/${taskId}/acknowledge`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ remarks: remarks })
+            });
+
+            if (response.ok) {
+                document.body.innerHTML = `
+                    <div class="box" style="text-align: center;">
+                        <h2 style="color: green;">Success!</h2>
+                        <p>Task acknowledged and reply saved.</p>
+                        <p>You may now close this window.</p>
+                    </div>`;
+            } else {
+                alert("Error submitting acknowledgement.");
+            }
+        }
+    </script>
+</body>
+</html>

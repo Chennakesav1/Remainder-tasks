@@ -86,7 +86,6 @@ async function loadHistory() {
 }
 
 
-
 function renderTable(tasksToRender) {
     const openBody = document.getElementById('openBody');
     const closedBody = document.getElementById('closedBody');
@@ -102,7 +101,7 @@ function renderTable(tasksToRender) {
         const row = document.createElement('tr');
         const priorityColor = task.priority === 'HIGH' ? '#d9534f' : (task.priority === 'MEDIUM' ? '#f0ad4e' : '#5bc0de');
         
-        // Attachment Links (Only relevant if closed, but safe to check)
+        // Attachment Links 
         let attachmentLinks = '';
         if (task.attachments && task.attachments.length > 0) {
             attachmentLinks = task.attachments.map((filePath, i) => 
@@ -110,8 +109,17 @@ function renderTable(tasksToRender) {
             ).join('');
         }
 
-        // Determine if it's open or closed to decide the S.No numbering
         const currentSerialNo = task.status === 'OPEN' ? openIndex++ : closedIndex++;
+
+        // --- NEW LOGIC: Calculate the Reply Text for the new column ---
+        let replyText = "";
+        if (task.acknowledgeRemarks) {
+            replyText += `<span style="color: #d9534f; font-size: 12px; display:block; margin-bottom:4px;"><b>Ack Reply:</b> ${task.acknowledgeRemarks}</span>`;
+        }
+        if (task.status === 'CLOSED' && task.closingRemarks) {
+            replyText += `<span style="color: #003366; font-size: 12px; display:block;"><b>Close Reply:</b> ${task.closingRemarks}</span>`;
+        }
+        // -------------------------------------------------------------
 
         row.innerHTML = `
             <td style="text-align:center;">${currentSerialNo}</td>
@@ -123,10 +131,16 @@ function renderTable(tasksToRender) {
             <td style="max-width:200px;">${task.action || ''}</td>
             <td>${(task.resp || []).join(', ')}</td>
             <td style="white-space:nowrap; font-weight:bold;">${formatDate(task.targetDate)}</td>
+            
             <td>
                 <span class="status-${task.status.toLowerCase()}">${task.status}</span>
                 ${task.acknowledged && task.status === 'OPEN' ? '<br><small style="color:green;">✓ Ack</small>' : ''}
             </td>
+            
+            <td style="max-width:200px; background-color: #f8f9fa;">
+                ${replyText || '<i style="color:#999; font-size:12px;">No replies yet</i>'}
+            </td>
+
             <td>
                 <div style="display: flex; flex-direction: column; gap: 5px;">
                     <textarea id="remark-input-${task._id}" rows="2" style="width: 140px; font-size: 0.8rem; border-radius:3px; border:1px solid #ccc;">${task.closingRemarks || ''}</textarea>
@@ -144,7 +158,6 @@ function renderTable(tasksToRender) {
         }
     });
 }
-
 // Updated Multi-Filter to include the re-added columns
 function filterTable() {
     const start = document.getElementById('filterStartDate').value;

@@ -38,6 +38,7 @@ const taskSchema = new mongoose.Schema({
     action: String,
     status: { type: String, default: 'OPEN' },
     acknowledged: { type: Boolean, default: false }, 
+    acknowledgeRemarks: String,
     closingRemarks: String,                          
     attachments: [String],
     triggerCount: { type: Number, default: 0 },
@@ -101,18 +102,15 @@ app.get('/api/tasks', async (req, res) => {
     }
 });
 
-app.get('/api/tasks/:id/acknowledge', async (req, res) => {
+app.post('/api/tasks/:id/acknowledge', async (req, res) => {
     try {
-        await Task.findByIdAndUpdate(req.params.id, { acknowledged: true });
-        res.send(`
-            <div style="font-family: sans-serif; text-align: center; margin-top: 50px; color: #003366;">
-                <h2>Task Acknowledged!</h2>
-                <p>Status updated to: <b>Read, Replied OK</b>.</p>
-                <p>You can close this window. The 3-hour triggers will continue until the task is completed.</p>
-            </div>
-        `);
+        await Task.findByIdAndUpdate(req.params.id, { 
+            acknowledged: true,
+            acknowledgeRemarks: req.body.remarks // Saves the text they entered
+        });
+        res.json({ message: "Task Acknowledged Successfully!" });
     } catch (error) {
-        res.status(500).send("Error acknowledging task.");
+        res.status(500).json({ error: "Error acknowledging task." });
     }
 });
 
@@ -205,7 +203,7 @@ async function sendConsolidatedEmail(userEmail, userTasks) {
                 <td style="padding: 10px; border: 1px solid #ddd; color: #003366; font-weight: bold;">${task.action}</td> 
                 <td style="padding: 10px; border: 1px solid #ddd;">${new Date(task.targetDate).toLocaleDateString()}</td>
                 <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
-                    <a href="${baseUrl}/api/tasks/${task._id}/acknowledge" style="color: #003366; font-weight:bold; text-decoration: underline; display:block; margin-bottom: 8px;">Acknowledge</a>
+                    <a href="${baseUrl}/acknowledge.html?id=${task._id}" style="color: #003366; font-weight:bold; text-decoration: underline; display:block; margin-bottom: 8px;">Acknowledge</a>
                     <a href="${baseUrl}/complete.html?id=${task._id}" style="display: inline-block; padding: 6px 10px; background-color: #003366; color: #ffffff; text-decoration: none; border-radius: 4px; font-size: 12px;">Close Task</a>
                 </td>
             </tr>
