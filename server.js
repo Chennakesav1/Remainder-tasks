@@ -60,15 +60,17 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-
 app.post('/api/tasks', async (req, res) => {
     try {
+        // 1. Save the new task
         const newTask = new Task(req.body);
-        newTask.lastEmailedAt = new Date(); // Set current time on creation
+        newTask.lastEmailedAt = new Date();
         await newTask.save();
 
+        // 2. Extract emails
         const emails = newTask.email.split(',').map(e => e.trim()).filter(e => e);
 
+        // 3. Process and send emails
         for (let userEmail of emails) {
             const userOpenTasks = await Task.find({ 
                 status: 'OPEN',
@@ -76,20 +78,22 @@ app.post('/api/tasks', async (req, res) => {
             });
 
             if (userOpenTasks.length > 0) {
-                await sendConsolidatedEmail(userEmail, userOpenTasks);
+                // REMOVED 'await' HERE! 
+                // Now it sends in the background and doesn't freeze the website.
+                sendConsolidatedEmail(userEmail, userOpenTasks);
                 
-                // --- UPDATE TIMER FOR ALL TASKS SENT IN THIS BATCH ---
-                // If a user gets a new task, we group it with their old tasks.
-                // We reset the 3-hour timer for ALL tasks included in this email so they don't get spammed.
+                // Update the timers
                 for (let task of userOpenTasks) {
                     await Task.findByIdAndUpdate(task._id, { lastEmailedAt: new Date() });
                 }
             }
         }
 
+        // Instantly reply to the website so it changes to "Success!"
         res.status(201).json({ message: "Task created and consolidated emails sent." });
     } catch (error) {
-        res.status(500).json({ error: "Error saving task" });
+        console.error("Task Creation Error:", error);
+        res.status(500).json({ error: "Error saving task to database." });
     }
 });
 

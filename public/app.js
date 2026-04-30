@@ -184,7 +184,6 @@ function filterTable() {
     renderTable(filtered);
 }
 
-
 document.getElementById('taskForm').addEventListener('submit', async function(e) {
     e.preventDefault();
 
@@ -201,7 +200,7 @@ document.getElementById('taskForm').addEventListener('submit', async function(e)
 
     const statusDiv = document.getElementById('statusMessage');
     statusDiv.textContent = "Sending...";
-    statusDiv.style.color = "#003366"; // Theme Blue
+    statusDiv.style.color = "#003366";
 
     try {
         const response = await fetch('/api/tasks', {
@@ -210,24 +209,30 @@ document.getElementById('taskForm').addEventListener('submit', async function(e)
             body: JSON.stringify(taskData)
         });
 
-        const result = await response.json();
+        // Read the raw response first (safeguard against crashes)
+        const textResult = await response.text();
 
         if (response.ok) {
-            statusDiv.textContent = "Task recorded. Initial email sent and 3-hour trigger activated.";
+            statusDiv.textContent = "Task recorded! Emails triggering in the background.";
             statusDiv.style.color = "#28a745"; 
             
             document.getElementById('taskForm').reset();
             document.getElementById('date').value = new Date().toISOString().split('T')[0];
             
-            
             loadHistory(); 
         } else {
-            statusDiv.textContent = "Error: " + result.error;
-            statusDiv.style.color = "#dc3545"; // Error Red
+            // Try to show the exact error message
+            try {
+                const jsonError = JSON.parse(textResult);
+                statusDiv.textContent = "Error: " + (jsonError.error || "Unknown error");
+            } catch {
+                statusDiv.textContent = "Server Error: " + textResult;
+            }
+            statusDiv.style.color = "#dc3545"; 
         }
     } catch (error) {
-        console.error('Error:', error);
-        statusDiv.textContent = "Failed to connect to the server.";
+        console.error('Fetch Error:', error);
+        statusDiv.textContent = "Failed to connect to the server. Is it running?";
         statusDiv.style.color = "#dc3545";
     }
 });
