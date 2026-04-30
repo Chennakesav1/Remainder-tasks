@@ -60,6 +60,16 @@ const transporter = nodemailer.createTransport({
     }
 });
 
+// Add this verification block right here:
+transporter.verify(function(error, success) {
+  if (error) {
+    console.log("❌ SMTP Connection Failed! Check your .env credentials or Host details:");
+    console.log(error.message);
+  } else {
+    console.log("✅ Email Server is Connected and ready to send!");
+  }
+});
+
 app.post('/api/tasks', async (req, res) => {
     try {
         // 1. Save the new task
