@@ -12,7 +12,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public')); 
-
+app.get('/favicon.ico', (req, res) => res.status(204).end());
 
 const storage = multer.diskStorage({
     destination: './public/uploads/',
