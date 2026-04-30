@@ -1,24 +1,25 @@
-
 function openTab(evt, tabName) {
-    
     const tabcontent = document.getElementsByClassName("tab-content");
     for (let i = 0; i < tabcontent.length; i++) {
         tabcontent[i].style.display = "none";
     }
 
-  
     const tablinks = document.getElementsByClassName("tab-btn");
     for (let i = 0; i < tablinks.length; i++) {
         tablinks[i].className = tablinks[i].className.replace(" active", "");
     }
 
-    
     document.getElementById(tabName).style.display = "block";
     evt.currentTarget.className += " active";
 
-    
-    if (tabName === 'historyTab') {
+    // ✅ FIX: Now it fetches the latest database info for BOTH Open and Closed tabs
+    if (tabName === 'historyTab' || tabName === 'closedTab') {
         loadHistory();
+    } 
+    
+    // ✅ FIX: Ensures Analytics load properly when clicked
+    if (tabName === 'analyticsTab') {
+        renderAnalytics();
     }
 }
 
