@@ -260,11 +260,21 @@ async function sendConsolidatedEmail(userEmail, userTasks) {
         `
     };
 
+   // ... inside sendConsolidatedEmail ...
     try {
-        await transporter.sendMail(mailOptions);
-        console.log(`Consolidated email sent to ${userEmail} with ${userTasks.length} tasks.`);
+        // We capture the "info" receipt from the server
+        const info = await transporter.sendMail(mailOptions);
+        
+        console.log(`\n=========================================`);
+        console.log(`✅ SUCCESS: Email triggered for ${userEmail}`);
+        console.log(`🎫 Server Ticket: ${info.response}`);
+        console.log(`=========================================\n`);
+        
     } catch (error) {
-        console.log("Error sending consolidated email:", error);
+        console.log(`\n=========================================`);
+        console.log(`❌ FAILED: Could not trigger email for ${userEmail}`);
+        console.log(`⚠️ Reason: ${error.message}`);
+        console.log(`=========================================\n`);
     }
 }
 
